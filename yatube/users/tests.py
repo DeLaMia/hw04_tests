@@ -26,7 +26,7 @@ class StaticPagesURLTests(TestCase):
         for address, status_code in url_names.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, status_code)     
+                self.assertEqual(response.status_code, status_code)
 
     def test_url_exists_at_desired_location_authorized(self):
         """Страницы доступные авторизованному пользователю."""
@@ -37,7 +37,7 @@ class StaticPagesURLTests(TestCase):
         for address, status_code in url_names.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, status_code)        
+                self.assertEqual(response.status_code, status_code)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -49,4 +49,4 @@ class StaticPagesURLTests(TestCase):
         for address, template, in templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
-                self.assertTemplateUsed(response, template)                  
+                self.assertTemplateUsed(response, template)

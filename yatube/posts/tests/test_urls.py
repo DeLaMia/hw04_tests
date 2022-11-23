@@ -45,7 +45,7 @@ class PostUrlsTest(TestCase):
         for address, status_code in url_names.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, status_code) 
+                self.assertEqual(response.status_code, status_code)
 
     def test_url_exists_at_desired_location_authorized(self):
         """Страницы доступные авторизованному пользователю."""
@@ -60,7 +60,7 @@ class PostUrlsTest(TestCase):
         for address, status_code in url_names.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, status_code)             
+                self.assertEqual(response.status_code, status_code)
 
     def test_post_edit_url_exists_at_desired_location_author(self):
         """Страница /posts/<post_id>/edit/ доступна автору."""
@@ -70,13 +70,16 @@ class PostUrlsTest(TestCase):
     def test_post_edit_url_exists_at_desired_location_not_author(self):
         """Страница /posts/<post_id>/edit/ перенаправляет не авторов."""
         clients = {
-            self.guest_client: f'/auth/login/?next=/posts/{self.post.id}/edit/',
-            self.authorized_client_not_author: f'/posts/{self.post.id}/',
+            self.guest_client:
+                f'/auth/login/?next=/posts/{self.post.id}/edit/',
+            self.authorized_client_not_author:
+                f'/posts/{self.post.id}/',
         }
         for user_status, redirect in clients.items():
             with self.subTest(user_status=user_status):
-                response = user_status.get(f'/posts/{self.post.id}/edit/',follow=True)
-                self.assertRedirects(response, redirect)      
+                response = user_status.get(
+                    f'/posts/{self.post.id}/edit/', follow=True)
+                self.assertRedirects(response, redirect)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -91,4 +94,4 @@ class PostUrlsTest(TestCase):
         for address, template, in templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
-                self.assertTemplateUsed(response, template)             
+                self.assertTemplateUsed(response, template)

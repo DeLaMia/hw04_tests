@@ -26,4 +26,4 @@ class StaticPagesURLTests(TestCase):
         for address, template, in templates_url_names.items():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertTemplateUsed(response, template)  
+                self.assertTemplateUsed(response, template)
