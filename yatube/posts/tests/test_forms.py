@@ -1,13 +1,10 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from ..forms import PostForm
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostFormTests(TestCase):
@@ -19,6 +16,10 @@ class PostFormTests(TestCase):
             title='test-text',
             slug='test-slug',
             description='test_description',)
+        cls.new_group = Group.objects.create(
+            title='new-group',
+            slug='new-group-slug',
+            description='test_description',)
         cls.post = Post.objects.create(
             author=cls.user,
             text='test-post-text',
@@ -26,6 +27,7 @@ class PostFormTests(TestCase):
         cls.form = PostForm()
 
     def setUp(self):
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -57,14 +59,17 @@ class PostFormTests(TestCase):
             data=form_data,
             follow=True
         )
+        last_post = Post.objects.all().order_by('pub_date').last()
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(last_post.text, 'New-test-text')
+        self.assertEqual(last_post.group, self.group)
 
     def test_post_edit(self):
         """Изменяет запись в Post."""
         form_data_1 = {
             'text': 'New-text',
-            'group': self.group.pk
+            'group': self.new_group.pk
         }
         post_count = Post.objects.count()
         response = self.authorized_client.post(
@@ -75,4 +80,20 @@ class PostFormTests(TestCase):
         post_edit = Post.objects.get(pk=self.post.id)
         self.assertEqual(Post.objects.count(), post_count)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(post_edit.text, 'New-text')
+        self.assertEqual(post_edit.text, form_data_1['text'])
+        self.assertEqual(post_edit.group.pk, form_data_1['group'])
+
+    def test_post_create_not_authorized(self):
+        """Неавторизованный пользоватекль не может создать запись."""
+        post_count = Post.objects.count()
+        form_data = {
+            'text': 'not authorized',
+            'group': self.group.pk,
+        }
+        response = self.guest_client.post(
+            reverse('posts:post_create'),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(Post.objects.count(), post_count)
+        self.assertRedirects(response, '/auth/login/?next=/create/')

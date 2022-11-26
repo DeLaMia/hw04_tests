@@ -1,16 +1,26 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 TOTAL_POSTS: int = 20
 POSTS_AUTHOR_USER: int = 13
 POSTS_WITH_GROUP: int = 17
 POST_IN_PAGE: int = 10
+
+
+def post_test(self, response):
+    post_object = response.context['page_obj'][0]
+    self.assertEqual(post_object.author.username, self.user.username)
+    self.assertEqual(post_object.text, self.post.text)
+
+
+def post_card_test(self, response):
+    post_object = response.context['post_more']
+    self.assertEqual(post_object.author.username, self.user.username)
+    self.assertEqual(post_object.text, self.post.text)
+    self.assertEqual(post_object.group.title, self.group.title)
 
 
 class PostVievsTests(TestCase):
@@ -67,29 +77,35 @@ class PostVievsTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_index_page_show_correct_context(self):
-        """Шаблон списков сформирован с правильным контекстом."""
-        pages_names = {
-            reverse('posts:index'),
-            reverse('posts:group_list', kwargs={'slug': 'test-slug'}),
-            reverse('posts:profile', kwargs={'username': 'NoName'}),
-        }
-        for reverse_name in pages_names:
-            with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
-                first_object = response.context['page_obj'][0]
-                post_author_0 = first_object.author.username
-                post_text_0 = first_object.text
-                self.assertEqual(post_author_0, 'NoName')
-                self.assertEqual(post_text_0, 'test-post-text')
+        """Шаблон inde сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse('posts:index'))
+        post_test(self, response)
+
+    def test_group_page_show_correct_context(self):
+        """Шаблон grou сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse('posts:group_list',
+                                              kwargs={'slug': 'test-slug'}))
+        post_test(self, response)
+        self.assertEqual(response.context['group'], self.group)
+
+    def test_profile_page_show_correct_context(self):
+        """Шаблон profile сформирован с правильным контекстом."""
+        response = self.authorized_client.get(reverse('posts:profile',
+                                              kwargs={'username': 'NoName'}))
+        post_test(self, response)
+        self.assertEqual(response.context['author'], self.user)
+        self.assertEqual(response.context['post_count'],
+                         self.user.posts.count())
 
     def test_first_page_contains_ten_records(self):
-        '''Тест паджинатора'''
+        """Тест паджинатора"""
         pages_names = {
             reverse('posts:index'): TOTAL_POSTS,
             reverse('posts:group_list',
-                    kwargs={'slug': 'test-slug'}): POSTS_WITH_GROUP,
+                    kwargs={'slug': self.group.slug}): POSTS_WITH_GROUP,
             reverse('posts:profile',
-                    kwargs={'username': 'NoName'}): POSTS_AUTHOR_USER,
+                    kwargs={'username':
+                            self.user.username}): POSTS_AUTHOR_USER,
         }
         for reverse_name in pages_names.keys():
             with self.subTest(reverse_name=reverse_name):
@@ -108,15 +124,10 @@ class PostVievsTests(TestCase):
             self.authorized_client.get(reverse('posts:post_detail',
                                                kwargs={'post_id':
                                                        self.post.id})))
-        self.assertEqual(response.context.get('post_more').author.username,
-                         'NoName')
-        self.assertEqual(response.context.get('post_more').text,
-                         'test-post-text')
-        self.assertEqual(response.context.get('post_more').group.title,
-                         'test-text')
+        post_card_test(self, response)
 
     def test_post_create_show_correct_context(self):
-        """Шаблон post_create и edit сформирован с правильным контекстом."""
+        """Шаблон post_create сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_create'))
         form_fields = {
             'text': forms.fields.CharField,
@@ -126,12 +137,20 @@ class PostVievsTests(TestCase):
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
+
+    def test_post_create_show_correct_context(self):
+        """Шаблон post_edit сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse(
             'posts:post_edit', kwargs={'post_id': self.post.id}))
+        form_fields = {
+            'text': forms.fields.CharField,
+            'group': forms.models.ModelChoiceField,
+        }
         for value, expected in form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
+        self.assertTrue(response.context.get('is_edit'))
 
     def test_post_show_correct_group(self):
         """ post при создании с группой отображается на всех страницах
@@ -154,16 +173,6 @@ class PostVievsTests(TestCase):
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 first_object = response.context['page_obj'][0]
-                post_author_0 = first_object.author.username
-                post_text_0 = first_object.text
-                post_group_0 = first_object.group.title
-                self.assertEqual(post_author_0, 'NoName')
-                self.assertEqual(post_text_0, 'new-test-post-text')
-                self.assertEqual(post_group_0, 'new')
-        response = self.authorized_client.get(reverse(
-            'posts:group_list', kwargs={'slug': 'test-slug'}))
-        first_object = response.context['page_obj'][0]
-        post_text_0 = first_object.text
-        post_group_0 = first_object.group.title
-        self.assertEqual(post_text_0, 'test-post-text')
-        self.assertEqual(post_group_0, 'test-text')
+                self.assertEqual(first_object.author.username, 'NoName')
+                self.assertEqual(first_object.text, 'new-test-post-text')
+                self.assertEqual(first_object.group.title, 'new')

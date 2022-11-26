@@ -1,11 +1,8 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostUrlsTest(TestCase):
@@ -35,11 +32,9 @@ class PostUrlsTest(TestCase):
         """Страницы доступные любому пользователю."""
         url_names = {
             '/': HTTPStatus.OK,
-            '/group/test-slug/': HTTPStatus.OK,
-            '/profile/NoName/': HTTPStatus.OK,
-            '/create/': HTTPStatus.FOUND,
+            f'/group/{self.group.slug}/': HTTPStatus.OK,
+            f'/profile/{self.user.username}/': HTTPStatus.OK,
             f'/posts/{self.post.id}/': HTTPStatus.OK,
-            f'/posts/{self.post.id}/edit/': HTTPStatus.FOUND,
             '/unexisting_page/': HTTPStatus.NOT_FOUND,
         }
         for address, status_code in url_names.items():
@@ -48,14 +43,10 @@ class PostUrlsTest(TestCase):
                 self.assertEqual(response.status_code, status_code)
 
     def test_url_exists_at_desired_location_authorized(self):
-        """Страницы доступные авторизованному пользователю."""
+        """Страницы недоступны гостю."""
         url_names = {
-            '/': HTTPStatus.OK,
-            '/group/test-slug/': HTTPStatus.OK,
-            '/profile/NoName/': HTTPStatus.OK,
             '/create/': HTTPStatus.FOUND,
-            f'/posts/{self.post.id}/': HTTPStatus.OK,
-            '/unexisting_page/': HTTPStatus.NOT_FOUND,
+            f'/posts/{self.post.id}/edit/': HTTPStatus.FOUND,
         }
         for address, status_code in url_names.items():
             with self.subTest(address=address):
@@ -85,8 +76,8 @@ class PostUrlsTest(TestCase):
         """URL-адрес использует соответствующий шаблон."""
         templates_url_names = {
             '/': 'posts/index.html',
-            '/group/test-slug/': 'posts/group_list.html',
-            '/profile/NoName/': 'posts/profile.html',
+            f'/group/{self.group.slug}/': 'posts/group_list.html',
+            f'/profile/{self.user.username}/': 'posts/profile.html',
             '/create/': 'posts/post_create.html',
             f'/posts/{self.post.id}/': 'posts/post_detail.html',
             f'/posts/{self.post.id}/edit/': 'posts/post_create.html',
