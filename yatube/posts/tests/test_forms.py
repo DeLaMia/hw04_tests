@@ -62,7 +62,7 @@ class PostFormTests(TestCase):
         last_post = Post.objects.all().order_by('pub_date').last()
         self.assertEqual(Post.objects.count(), post_count + 1)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertEqual(last_post.text, 'New-test-text')
+        self.assertEqual(last_post.text, form_data['text'])
         self.assertEqual(last_post.group, self.group)
 
     def test_post_edit(self):

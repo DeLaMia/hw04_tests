@@ -20,12 +20,8 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_post_and_group_names(self):
         """__str__  содержиит корректные данные."""
-        post = PostModelTest.post
-        group = PostModelTest.group
-        expected_post_name = post.text
-        expected_group_name = group.title
-        self.assertEqual(expected_post_name, str(post))
-        self.assertEqual(expected_group_name, str(group))
+        self.assertEqual(PostModelTest.post.text, str(PostModelTest.post))
+        self.assertEqual(PostModelTest.group.title, str(PostModelTest.group))
 
     def test_verbose_name(self):
         """verbose_name в полях совпадает с ожидаемым."""

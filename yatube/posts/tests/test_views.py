@@ -10,19 +10,6 @@ POSTS_WITH_GROUP: int = 17
 POST_IN_PAGE: int = 10
 
 
-def post_test(self, response):
-    post_object = response.context['page_obj'][0]
-    self.assertEqual(post_object.author.username, self.user.username)
-    self.assertEqual(post_object.text, self.post.text)
-
-
-def post_card_test(self, response):
-    post_object = response.context['post_more']
-    self.assertEqual(post_object.author.username, self.user.username)
-    self.assertEqual(post_object.text, self.post.text)
-    self.assertEqual(post_object.group.title, self.group.title)
-
-
 class PostVievsTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -55,6 +42,17 @@ class PostVievsTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
+    def post_test(self, response):
+        post_object = response.context['page_obj'][0]
+        self.assertEqual(post_object.author.username, self.user.username)
+        self.assertEqual(post_object.text, self.post.text)
+
+    def post_card_test(self, response):
+        post_object = response.context['post_more']
+        self.assertEqual(post_object.author.username, self.user.username)
+        self.assertEqual(post_object.text, self.post.text)
+        self.assertEqual(post_object.group.title, self.group.title)
+
     def test_pages_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_pages_names = {
@@ -79,20 +77,20 @@ class PostVievsTests(TestCase):
     def test_index_page_show_correct_context(self):
         """Шаблон inde сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:index'))
-        post_test(self, response)
+        self.post_test(response)
 
     def test_group_page_show_correct_context(self):
         """Шаблон grou сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:group_list',
                                               kwargs={'slug': 'test-slug'}))
-        post_test(self, response)
+        self.post_test(response)
         self.assertEqual(response.context['group'], self.group)
 
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:profile',
                                               kwargs={'username': 'NoName'}))
-        post_test(self, response)
+        self.post_test(response)
         self.assertEqual(response.context['author'], self.user)
         self.assertEqual(response.context['post_count'],
                          self.user.posts.count())
@@ -124,7 +122,7 @@ class PostVievsTests(TestCase):
             self.authorized_client.get(reverse('posts:post_detail',
                                                kwargs={'post_id':
                                                        self.post.id})))
-        post_card_test(self, response)
+        self.post_card_test(response)
 
     def test_post_create_show_correct_context(self):
         """Шаблон post_create сформирован с правильным контекстом."""
